@@ -52,12 +52,9 @@ def get_admin_token():
         }
         print(f"[DEBUG] Login payload prepared (password hidden)")
         
-        # Create a session to handle cookies
-        session = requests.Session()
-        
         # Login to get token
         print("[DEBUG] Sending login request...")
-        response = session.post(
+        response = requests.post(
             PALMR_LOGIN_URL,
             json=login_payload,
             timeout=10
@@ -74,14 +71,26 @@ def get_admin_token():
             # Check for token in JSON response first
             token = data.get('token')
             
-            # If not in JSON, get from cookies
+            # If not in JSON, extract from set-cookie header
             if not token:
-                print("[DEBUG] Token not in JSON response, checking session cookies...")
-                token = session.cookies.get('token')
-                if token:
-                    print(f"[DEBUG] Token extracted from session cookies: {token[:20]}...")
-                else:
-                    print("[ERROR] No token found in cookies either")
+                print("[DEBUG] Token not in JSON response, checking cookies...")
+                set_cookie_header = response.headers.get('set-cookie', '')
+                print(f"[DEBUG] Set-Cookie header: {set_cookie_header}")
+                
+                # Parse the cookie to extract token
+                if 'token=' in set_cookie_header:
+                    # Extract token value from cookie string
+                    # Format: token=JWT_TOKEN_HERE; Path=/; HttpOnly; SameSite=Strict
+                    cookie_parts = set_cookie_header.split(';')
+                    for part in cookie_parts:
+                        if part.strip().startswith('token='):
+                            token = part.strip().split('=', 1)[1]
+                            break
+                    
+                    if token:
+                        print(f"[DEBUG] Token extracted from cookie: {token[:20]}...")
+                    else:
+                        print("[ERROR] Failed to extract token from cookie")
             
             if token:
                 print(f"[DEBUG] Token received: {token[:20]}...")
@@ -115,7 +124,7 @@ def get_admin_token():
         import traceback
         print(f"[DEBUG] Full traceback: {traceback.format_exc()}")
         return None
-        
+
 def create_user_in_palmr_api(user_data):
     """Create user in Palmr API using admin token with detailed debugging"""
     try:
