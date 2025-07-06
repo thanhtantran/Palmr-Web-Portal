@@ -125,184 +125,163 @@ def get_admin_token():
         print(f"[DEBUG] Full traceback: {traceback.format_exc()}")
         return None
 
-def create_user_in_palmr_api(user_data):
-    """Create user in Palmr API using admin token with detailed debugging"""
+def create_palmr_user(user_data):
+    """Create user in Palmr API with detailed debugging"""
+    print(f"[DEBUG] Starting Palmr API user creation for: {user_data.get('username', 'Unknown')}")
+    
+    # Get admin token
+    print("[DEBUG] Attempting to get admin token...")
+    admin_token = get_admin_token()
+    if not admin_token:
+        print("[ERROR] Failed to obtain admin token")
+        return False
+    
+    print(f"[DEBUG] Admin token obtained successfully: {admin_token[:20]}...")
+    
     try:
-        print(f"[DEBUG] Starting Palmr API user creation for: {user_data.get('username', 'Unknown')}")
-        
-        # Get admin token
-        print("[DEBUG] Attempting to get admin token...")
-        token = get_admin_token()
-        if not token:
-            print("[ERROR] Failed to obtain admin token")
-            return False, None
-        
-        print(f"[DEBUG] Admin token obtained successfully: {token[:20]}...")
-        
         # Prepare headers
         headers = {
-            'Authorization': f'Bearer {token}',
+            'Authorization': f'Bearer {admin_token}',
             'Content-Type': 'application/json'
         }
         print(f"[DEBUG] Request headers prepared: {headers}")
         
-        # Log the request data (excluding sensitive info)
-        safe_user_data = user_data.copy()
-        if 'password' in safe_user_data:
-            safe_user_data['password'] = '***HIDDEN***'
-        print(f"[DEBUG] Request payload: {safe_user_data}")
-        print(f"[DEBUG] Target URL: {PALMR_REGISTER_URL}")
+        # Prepare payload with separate firstName and lastName
+        payload = {
+            'firstName': user_data.get('firstName', '').strip(),
+            'lastName': user_data.get('lastName', '').strip(),
+            'username': user_data['username'].strip(),
+            'email': user_data['email'].strip(),
+            'password': user_data['password']
+        }
         
-        # Make the API request
-        print("[DEBUG] Sending POST request to Palmr API...")
+        # Add image field if provided
+        if 'image' in user_data and user_data['image']:
+            payload['image'] = user_data['image']
+        
+        # Hide password in debug output
+        debug_payload = payload.copy()
+        debug_payload['password'] = '***HIDDEN***'
+        print(f"[DEBUG] Request payload: {debug_payload}")
+        print(f"[DEBUG] Target URL: {PALMR_REGISTER_URL}")
+        print(f"[DEBUG] Sending POST request to Palmr API...")
+        
         response = requests.post(
             PALMR_REGISTER_URL,
-            json=user_data,
+            json=payload,
             headers=headers,
             timeout=10
         )
         
-        # Log response details
         print(f"[DEBUG] Response status code: {response.status_code}")
         print(f"[DEBUG] Response headers: {dict(response.headers)}")
         
-        # Log response content
-        try:
-            response_json = response.json()
-            print(f"[DEBUG] Response JSON: {response_json}")
-        except Exception as json_error:
-            print(f"[DEBUG] Response text (not JSON): {response.text}")
-            print(f"[DEBUG] JSON parsing error: {json_error}")
-        
-        # Check for success status codes
-        if response.status_code in [200, 201]:
-            print("[SUCCESS] User created successfully in Palmr API")
-            return True, response
+        if response.status_code == 200 or response.status_code == 201:
+            print("[DEBUG] User creation successful!")
+            try:
+                response_data = response.json()
+                print(f"[DEBUG] Success response: {response_data}")
+            except:
+                print(f"[DEBUG] Success response (text): {response.text}")
+            return True
         else:
-            print(f"[ERROR] Palmr API returned error status: {response.status_code}")
-            print(f"[ERROR] Error response: {response.text}")
+            try:
+                error_data = response.json()
+                print(f"[DEBUG] Error response JSON: {error_data}")
+            except:
+                print(f"[DEBUG] Error response text: {response.text}")
             
-            # Check for specific error types
+            print(f"[ERROR] Palmr API returned error status: {response.status_code}")
             if response.status_code == 400:
                 print("[ERROR] Bad Request - Check request payload format")
-            elif response.status_code == 401:
-                print("[ERROR] Unauthorized - Token might be invalid or expired")
-            elif response.status_code == 403:
-                print("[ERROR] Forbidden - Admin account might not have permission")
             elif response.status_code == 409:
-                print("[ERROR] Conflict - User might already exist in Palmr")
+                print("[ERROR] Conflict - User might already exist")
             elif response.status_code == 422:
-                print("[ERROR] Unprocessable Entity - Validation errors")
-            elif response.status_code >= 500:
-                print("[ERROR] Server Error - Palmr API internal error")
+                print("[ERROR] Unprocessable Entity - Validation error")
             
-            return False, response
-            
+            return False
+        
     except requests.exceptions.Timeout as e:
         print(f"[ERROR] Request timeout: {e}")
-        return False, None
+        return False
     except requests.exceptions.ConnectionError as e:
         print(f"[ERROR] Connection error: {e}")
-        print("[DEBUG] Check if Palmr API URL is correct and accessible")
-        return False, None
-    except requests.exceptions.HTTPError as e:
-        print(f"[ERROR] HTTP error: {e}")
-        return False, None
-    except requests.exceptions.RequestException as e:
-        print(f"[ERROR] Request exception: {e}")
-        return False, None
+        return False
     except Exception as e:
-        print(f"[ERROR] Unexpected error in create_user_in_palmr_api: {e}")
-        print(f"[DEBUG] Error type: {type(e).__name__}")
+        print(f"[ERROR] Error creating Palmr user: {e}")
         import traceback
         print(f"[DEBUG] Full traceback: {traceback.format_exc()}")
-        return False, None
+        return False
 
-@user_bp.route('/register', methods=['POST'])
-def register_user():
-    """Register a new user with email validation and Palmr API integration"""
+@app.route('/api/register', methods=['POST'])
+def register():
     try:
-        data = request.json
+        data = request.get_json()
+        print(f"[DEBUG] Received registration data: {data}")
         
         # Validate required fields
-        if not data or not all(key in data for key in ['name', 'username', 'email', 'password']):
-            return jsonify({'message': 'Name, username, email, and password are required'}), 400
+        required_fields = ['firstName', 'lastName', 'username', 'email', 'password']
+        for field in required_fields:
+            if not data.get(field):
+                print(f"[ERROR] Missing required field: {field}")
+                return jsonify({'error': f'Missing required field: {field}'}), 400
         
-        name = data['name'].strip()
+        # Extract user data
+        firstName = data['firstName'].strip()
+        lastName = data['lastName'].strip()
         username = data['username'].strip()
-        email = data['email'].strip().lower()
+        email = data['email'].strip()
         password = data['password']
-        image = data.get('image', '')  # Optional image field
         
-        # Validate field lengths and content
-        if not name or len(name) < 2:
-            return jsonify({'message': 'Name must be at least 2 characters long'}), 400
+        print(f"[DEBUG] Extracted data - firstName: {firstName}, lastName: {lastName}, username: {username}, email: {email}")
         
-        if not username or len(username) < 3:
-            return jsonify({'message': 'Username must be at least 3 characters long'}), 400
-        
-        if not email:
-            return jsonify({'message': 'Email is required'}), 400
-        
-        if not password or len(password) < 6:
-            return jsonify({'message': 'Password must be at least 6 characters long'}), 400
+        # Validate data
+        if len(firstName) < 1:
+            return jsonify({'error': 'Tên phải có ít nhất 1 ký tự'}), 400
+            
+        if len(lastName) < 1:
+            return jsonify({'error': 'Họ phải có ít nhất 1 ký tự'}), 400
+            
+        if len(username) < 3:
+            return jsonify({'error': 'Tên đăng nhập phải có ít nhất 3 ký tự'}), 400
+            
+        if len(password) < 6:
+            return jsonify({'error': 'Mật khẩu phải có ít nhất 6 ký tự'}), 400
         
         # Email validation
-        if not validate_email(email):
-            return jsonify({'message': 'Please enter a valid email address'}), 400
+        import re
+        email_pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+        if not re.match(email_pattern, email):
+            return jsonify({'error': 'Email không hợp lệ'}), 400
         
-        # Check if user already exists
-        existing_user = User.query.filter(
-            (User.username == username) | (User.email == email)
-        ).first()
+        print("[DEBUG] All validations passed")
         
-        if existing_user:
-            if existing_user.username == username:
-                return jsonify({'message': 'Username already exists'}), 409
-            else:
-                return jsonify({'message': 'Email already registered'}), 409
-        
-        # Create user in local database first
-        user = User(name=name, username=username, email=email, password=password)
-        db.session.add(user)
-        db.session.commit()
-        
-        # Split name into firstName and lastName for Palmr API
-        name_parts = name.split(' ', 1)
-        first_name = name_parts[0]
-        last_name = name_parts[1] if len(name_parts) > 1 else ''
-        
-        # Prepare data for Palmr API
-        palmr_user_data = {
-            'firstName': first_name,
-            'lastName': last_name,
+        # Prepare user data for Palmr API
+        user_data = {
+            'firstName': firstName,
+            'lastName': lastName,
             'username': username,
             'email': email,
-            'image': image,  # Optional image field
-            'password': password  # Password field from user input
+            'password': password
         }
         
-        # Try to create user in Palmr API
-        success, response = create_user_in_palmr_api(palmr_user_data)
-        
-        if success:
+        # Create user in Palmr API
+        print("[DEBUG] Creating user in Palmr API...")
+        if create_palmr_user(user_data):
+            print("[DEBUG] User created successfully in Palmr API")
             return jsonify({
-                'message': 'Registration successful! Your account has been created.',
-                'user': user.to_dict()
+                'message': 'Tài khoản đã được tạo thành công! Vui lòng kiểm tra email để xác minh tài khoản.',
+                'success': True
             }), 201
         else:
-            # If Palmr API fails, we still keep the local user but notify about the issue
-            return jsonify({
-                'message': 'Registration completed locally, but there was an issue connecting to the Palmr service. Please contact support if you experience any issues.',
-                'user': user.to_dict(),
-                'warning': 'Palmr API connection failed'
-            }), 201
+            print("[ERROR] Failed to create user in Palmr API")
+            return jsonify({'error': 'Không thể tạo tài khoản. Vui lòng thử lại sau.'}), 500
             
     except Exception as e:
-        # Rollback database changes if something goes wrong
-        db.session.rollback()
-        print(f"Registration error: {e}")
-        return jsonify({'message': 'An error occurred during registration. Please try again.'}), 500
+        print(f"[ERROR] Registration error: {e}")
+        import traceback
+        print(f"[DEBUG] Full traceback: {traceback.format_exc()}")
+        return jsonify({'error': 'Lỗi server. Vui lòng thử lại sau.'}), 500
 
 @user_bp.route('/users', methods=['GET'])
 def get_users():

@@ -39,9 +39,15 @@
             <div id="register-form" class="form-section">
                 <form onsubmit="handleRegister(event)">
                     <div class="form-group">
-                        <label for="register-name">Tên đầy đủ</label>
-                        <input type="text" id="register-name" name="name" required>
-                        <div class="error-message" id="name-error"></div>
+                        <label for="register-firstName">Tên</label>
+                        <input type="text" id="register-firstName" name="firstName" required>
+                        <div class="error-message" id="firstName-error"></div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="register-lastName">Họ</label>
+                        <input type="text" id="register-lastName" name="lastName" required>
+                        <div class="error-message" id="lastName-error"></div>
                     </div>
                     
                     <div class="form-group">
@@ -86,4 +92,3 @@
     <script src="scripts.js"></script>
 </body>
 </html>
-

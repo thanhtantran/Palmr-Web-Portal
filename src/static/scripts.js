@@ -88,91 +88,100 @@ function handleLogin(event) {
 
 async function handleRegister(event) {
     event.preventDefault();
-    clearMessages();
     
-    const name = document.getElementById('register-name').value.trim();
+    // Clear previous errors
+    clearErrors();
+    
+    // Get form data
+    const firstName = document.getElementById('register-firstName').value.trim();
+    const lastName = document.getElementById('register-lastName').value.trim();
     const username = document.getElementById('register-username').value.trim();
     const email = document.getElementById('register-email').value.trim();
     const password = document.getElementById('register-password').value;
     const confirmPassword = document.getElementById('register-confirm-password').value;
     
-    // Basic validation
-    let hasErrors = false;
+    // Validate form
+    let hasError = false;
     
-    if (!name) {
-        showFieldError('name', 'Name is required');
-        hasErrors = true;
+    if (!firstName) {
+        showError('firstName-error', 'Vui lòng nhập tên');
+        hasError = true;
+    }
+    
+    if (!lastName) {
+        showError('lastName-error', 'Vui lòng nhập họ');
+        hasError = true;
     }
     
     if (!username) {
-        showFieldError('username', 'Username is required');
-        hasErrors = true;
+        showError('username-error', 'Vui lòng nhập tên đăng nhập');
+        hasError = true;
+    } else if (username.length < 3) {
+        showError('username-error', 'Tên đăng nhập phải có ít nhất 3 ký tự');
+        hasError = true;
     }
     
     if (!email) {
-        showFieldError('email', 'Email is required');
-        hasErrors = true;
-    } else if (!validateEmail(email)) {
-        showFieldError('email', 'Please enter a valid email address');
-        hasErrors = true;
+        showError('email-error', 'Vui lòng nhập email');
+        hasError = true;
+    } else if (!isValidEmail(email)) {
+        showError('email-error', 'Email không hợp lệ');
+        hasError = true;
     }
     
     if (!password) {
-        showFieldError('password', 'Password is required');
-        hasErrors = true;
+        showError('password-error', 'Vui lòng nhập mật khẩu');
+        hasError = true;
     } else if (password.length < 6) {
-        showFieldError('password', 'Password must be at least 6 characters long');
-        hasErrors = true;
+        showError('password-error', 'Mật khẩu phải có ít nhất 6 ký tự');
+        hasError = true;
     }
     
     if (!confirmPassword) {
-        showFieldError('confirm-password', 'Please confirm your password');
-        hasErrors = true;
+        showError('confirm-password-error', 'Vui lòng xác nhận mật khẩu');
+        hasError = true;
     } else if (password !== confirmPassword) {
-        showFieldError('confirm-password', 'Passwords do not match');
-        hasErrors = true;
+        showError('confirm-password-error', 'Mật khẩu không khớp');
+        hasError = true;
     }
     
-    if (hasErrors) {
+    if (hasError) {
         return;
     }
     
-    showLoading(true);
+    // Show loading
+    showLoading();
     
-    try {
-        // Call our registration API
-        const response = await fetch('/api/register', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                name: name,
-                username: username,
-                email: email,
-                password: password
-            })
-        });
-        
-        const data = await response.json();
-        
-        if (response.ok) {
-            showResult('Registration successful! Your account has been created.', true);
+    // Send registration request
+    fetch('/api/register', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            firstName: firstName,
+            lastName: lastName,
+            username: username,
+            email: email,
+            password: password
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        hideLoading();
+        if (data.success) {
+            showResult(data.message, 'success');
             // Clear form
-            document.getElementById('register-name').value = '';
-            document.getElementById('register-username').value = '';
-            document.getElementById('register-email').value = '';
-            document.getElementById('register-password').value = '';
-            document.getElementById('register-confirm-password').value = '';
+            document.getElementById('register-form').querySelector('form').reset();
         } else {
-            showResult(data.message || 'Registration failed. Please try again.', false);
+            showResult(data.error || 'Có lỗi xảy ra', 'error');
         }
-    } catch (error) {
-        console.error('Registration error:', error);
-        showResult('Network error. Please check your connection and try again.', false);
-    } finally {
-        showLoading(false);
-    }
+    })
+    .catch(error => {
+        hideLoading();
+        console.error('Error:', error);
+        showResult('Có lỗi xảy ra. Vui lòng thử lại sau.', 'error');
+    });
 }
 
 // Add some interactive effects
