@@ -213,7 +213,7 @@ def create_palmr_user(user_data):
         print(f"[DEBUG] Full traceback: {traceback.format_exc()}")
         return False
 
-@user_bp.route('/api/register', methods=['POST'])
+@user_bp.route('/register', methods=['POST'])
 def register():
     try:
         data = request.get_json()

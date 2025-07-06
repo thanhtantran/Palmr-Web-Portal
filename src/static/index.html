@@ -1,94 +1,94 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <link rel="icon" type="image/x-icon" href="/favicon.ico" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SaveYourFile.online - Login & Register</title>
-    <link rel="stylesheet" href="styles.css">
+  <meta charset="UTF-8">
+  <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SaveYourFile.online - Login & Register</title>
+  <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-            <h1>SaveYourFile.online</h1>
-            <p>Chào mừng bạn đến với nơi lưu trữ và chia sẻ file không giới hạn</p>
-        </div>
-        
-        <div class="form-container">
-            <div class="tab-buttons">
-                <button class="tab-button active" onclick="switchTab('login')">Đăng nhập</button>
-                <button class="tab-button" onclick="switchTab('register')">Đăng ký</button>
-            </div>
+  <div class="container">
+      <div class="header">
+          <h1>SaveYourFile.online</h1>
+          <p>Chào mừng bạn đến với nơi lưu trữ và chia sẻ file không giới hạn</p>
+      </div>
+      
+      <div class="form-container">
+          <div class="tab-buttons">
+              <button class="tab-button active" onclick="switchTab('login')">Đăng nhập</button>
+              <button class="tab-button" onclick="switchTab('register')">Đăng ký</button>
+          </div>
 
-            <!-- Login Form -->
-            <div id="login-form" class="form-section active">
-                <form onsubmit="handleLogin(event)">
-                    <div class="form-group">
-                        <label for="login-info">Bạn đã có tài khoản?</label>
-                        <p style="color: #6c757d; font-size: 14px; margin-bottom: 20px;">
-                            Bấm nút dưới đây để đăng nhập.
-                        </p>
-                    </div>
-                    <button type="submit" class="submit-btn login-btn">
-                        Đăng nhập
-                    </button>
-                </form>
-            </div>
+          <!-- Login Form -->
+          <div id="login-form" class="form-section active">
+              <form onsubmit="handleLogin(event)">
+                  <div class="form-group">
+                      <label for="login-info">Bạn đã có tài khoản?</label>
+                      <p style="color: #6c757d; font-size: 14px; margin-bottom: 20px;">
+                          Bấm nút dưới đây để đăng nhập.
+                      </p>
+                  </div>
+                  <button type="submit" class="submit-btn login-btn">
+                      Đăng nhập
+                  </button>
+              </form>
+          </div>
 
-            <!-- Register Form -->
-            <div id="register-form" class="form-section">
-                <form onsubmit="handleRegister(event)">
-                    <div class="form-group">
-                        <label for="register-firstName">Tên</label>
-                        <input type="text" id="register-firstName" name="firstName" required>
-                        <div class="error-message" id="firstName-error"></div>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="register-lastName">Họ</label>
-                        <input type="text" id="register-lastName" name="lastName" required>
-                        <div class="error-message" id="lastName-error"></div>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="register-username">Tên đăng nhập</label>
-                        <input type="text" id="register-username" name="username" required>
-                        <div class="error-message" id="username-error"></div>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="register-email">Email</label>
-                        <input type="email" id="register-email" name="email" required>
-                        <div class="error-message" id="email-error"></div>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="register-password">Mật khẩu</label>
-                        <input type="password" id="register-password" name="password" required>
-                        <div class="error-message" id="password-error"></div>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="register-confirm-password">Lặp lại Mật khẩu </label>
-                        <input type="password" id="register-confirm-password" name="confirm-password" required>
-                        <div class="error-message" id="confirm-password-error"></div>
-                    </div>
-                    
-                    <button type="submit" class="submit-btn">
-                        Tạo tài khoản
-                    </button>
-                </form>
-            </div>
+          <!-- Register Form -->
+          <div id="register-form" class="form-section">
+              <form onsubmit="handleRegister(event)">
+                  <div class="form-group">
+                      <label for="register-firstName">Tên</label>
+                      <input type="text" id="register-firstName" name="firstName" required>
+                      <div class="error-message" id="firstName-error"></div>
+                  </div>
+                  
+                  <div class="form-group">
+                      <label for="register-lastName">Họ</label>
+                      <input type="text" id="register-lastName" name="lastName" required>
+                      <div class="error-message" id="lastName-error"></div>
+                  </div>
+                  
+                  <div class="form-group">
+                      <label for="register-username">Tên đăng nhập</label>
+                      <input type="text" id="register-username" name="username" required>
+                      <div class="error-message" id="username-error"></div>
+                  </div>
+                  
+                  <div class="form-group">
+                      <label for="register-email">Email</label>
+                      <input type="email" id="register-email" name="email" required>
+                      <div class="error-message" id="email-error"></div>
+                  </div>
+                  
+                  <div class="form-group">
+                      <label for="register-password">Mật khẩu</label>
+                      <input type="password" id="register-password" name="password" required>
+                      <div class="error-message" id="password-error"></div>
+                  </div>
+                  
+                  <div class="form-group">
+                      <label for="register-confirm-password">Lặp lại Mật khẩu</label>
+                      <input type="password" id="register-confirm-password" name="confirm-password" required>
+                      <div class="error-message" id="confirm-password-error"></div>
+                  </div>
+                  
+                  <button type="submit" class="submit-btn">
+                      Tạo tài khoản
+                  </button>
+              </form>
+          </div>
 
-            <div class="loading" id="loading">
-                <div class="spinner"></div>
-                <p style="margin-top: 10px; color: #6c757d;">Đang xử lý ... Bạn có thể phải cần xác minh email để có thể sử dụng tài khoản</p>
-            </div>
+          <div class="loading" id="loading">
+              <div class="spinner"></div>
+              <p style="margin-top: 10px; color: #6c757d;">Đang xử lý ... Bạn có thể phải cần xác minh email để có thể sử dụng tài khoản</p>
+          </div>
 
-            <div class="result-message" id="result-message"></div>
-        </div>
-    </div>
+          <div class="result-message" id="result-message"></div>
+      </div>
+  </div>
 
-    <script src="scripts.js"></script>
+  <script src="scripts.js"></script>
 </body>
 </html>
