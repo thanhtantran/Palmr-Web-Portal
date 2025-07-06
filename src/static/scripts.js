@@ -1,3 +1,20 @@
+let loginCaptchaSuccess = false;
+let registerCaptchaSuccess = false;
+
+function onLoginCaptchaSuccess(token) {
+    loginCaptchaSuccess = true;
+}
+
+function onRegisterCaptchaSuccess(token) {
+    registerCaptchaSuccess = true;
+}
+
+function resetCaptcha() {
+    loginCaptchaSuccess = false;
+    registerCaptchaSuccess = false;
+    grecaptcha.reset();
+}
+
 function switchTab(tab) {
   // Update tab buttons
   document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
@@ -26,6 +43,7 @@ function clearMessages() {
       msg.textContent = '';
   });
   document.querySelectorAll('input').forEach(input => input.classList.remove('error'));
+  resetCaptcha();
 }
 
 function clearErrors() {
@@ -161,6 +179,11 @@ async function handleRegister(event) {
   if (hasErrors) {
       return;
   }
+  
+  if (!registerCaptchaSuccess) {
+      showResult('Vui lòng xác nhận reCAPTCHA', false);
+      return;
+  }  
   
   showLoading(true);
   

@@ -1,3 +1,15 @@
+.g-recaptcha {
+    margin: 20px 0;
+    transform-origin: left top;
+    transform: scale(0.95);
+}
+
+@media (max-width: 320px) {
+    .g-recaptcha {
+        transform: scale(0.85);
+    }
+}
+
 * {
     margin: 0;
     padding: 0;
@@ -5,13 +17,13 @@
 }
 
 body {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-family: Tahoma, Geneva, Verdana, sans-serif;
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    min-height: 100vh;
+    min-height: 80vh;
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 20px;
+    padding: 10px;
 }
 
 .container {
@@ -87,7 +99,7 @@ body {
 }
 
 .form-group {
-    margin-bottom: 20px;
+    margin-bottom: 10px;
 }
 
 .form-group label {
@@ -102,7 +114,7 @@ body {
     padding: 15px;
     border: 2px solid #e9ecef;
     border-radius: 10px;
-    font-size: 16px;
+    font-size: 14px;
     transition: all 0.3s ease;
     background: #f8f9fa;
 }
@@ -121,14 +133,14 @@ body {
 
 .error-message {
     color: #dc3545;
-    font-size: 14px;
+    font-size: 12px;
     margin-top: 5px;
     display: none;
 }
 
 .success-message {
     color: #28a745;
-    font-size: 14px;
+    font-size: 12px;
     margin-top: 5px;
     display: none;
 }
@@ -140,7 +152,7 @@ body {
     color: white;
     border: none;
     border-radius: 10px;
-    font-size: 16px;
+    font-size: 14px;
     font-weight: 600;
     cursor: pointer;
     transition: all 0.3s ease;
