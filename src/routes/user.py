@@ -30,12 +30,14 @@ def register_user():
         data = request.json
         
         # Validate required fields
-        if not data or not all(key in data for key in ['name', 'username', 'email']):
-            return jsonify({'message': 'Name, username, and email are required'}), 400
+        if not data or not all(key in data for key in ['name', 'username', 'email', 'password']):
+            return jsonify({'message': 'Name, username, email, and password are required'}), 400
         
         name = data['name'].strip()
         username = data['username'].strip()
         email = data['email'].strip().lower()
+        password = data['password']
+        image = data.get('image', '')  # Optional image field
         
         # Validate field lengths and content
         if not name or len(name) < 2:
@@ -46,6 +48,9 @@ def register_user():
         
         if not email:
             return jsonify({'message': 'Email is required'}), 400
+        
+        if not password or len(password) < 6:
+            return jsonify({'message': 'Password must be at least 6 characters long'}), 400
         
         # Email validation
         if not validate_email(email):
@@ -63,7 +68,7 @@ def register_user():
                 return jsonify({'message': 'Email already registered'}), 409
         
         # Create user in local database first
-        user = User(name=name, username=username, email=email)
+        user = User(name=name, username=username, email=email, password=password)
         db.session.add(user)
         db.session.commit()
         
@@ -78,8 +83,8 @@ def register_user():
             'lastName': last_name,
             'username': username,
             'email': email,
-            'image': '',  # Empty image field
-            'password': ''  # Empty password field - will be set by user later
+            'image': image,  # Optional image field
+            'password': password  # Password field from user input
         }
         
         # Try to create user in Palmr API
