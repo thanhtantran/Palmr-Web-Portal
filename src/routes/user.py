@@ -19,59 +19,119 @@ def validate_email(email):
     return re.match(pattern, email) is not None
 
 def get_admin_token():
-    """Get admin token with caching"""
+    """Get admin token with caching and detailed debugging"""
     current_time = time.time()
+    
+    print(f"[DEBUG] Checking admin token cache...")
+    print(f"[DEBUG] Current time: {current_time}")
+    print(f"[DEBUG] Token expiry: {token_cache['expiry']}")
+    print(f"[DEBUG] Token exists: {token_cache['token'] is not None}")
     
     # If token exists and is not expired (giving 5 min buffer before actual expiry)
     if token_cache['token'] and token_cache['expiry'] > current_time + 300:
+        print("[DEBUG] Using cached admin token")
         return token_cache['token']
+    
+    print("[DEBUG] Getting new admin token...")
     
     # Otherwise, get a new token
     try:
         # Decrypt admin credentials
+        print("[DEBUG] Decrypting admin credentials...")
         admin_username = decrypt_text(ADMIN_USERNAME)
         admin_password = decrypt_text(ADMIN_PASSWORD)
         
+        print(f"[DEBUG] Admin username: {admin_username}")
+        print(f"[DEBUG] Admin password: {'*' * len(admin_password) if admin_password else 'None'}")
+        print(f"[DEBUG] Login URL: {PALMR_LOGIN_URL}")
+        
+        # Prepare login payload
+        login_payload = {
+            'emailOrUsername': admin_username,
+            'password': admin_password
+        }
+        print(f"[DEBUG] Login payload prepared (password hidden)")
+        
         # Login to get token
+        print("[DEBUG] Sending login request...")
         response = requests.post(
             PALMR_LOGIN_URL,
-            json={
-                'emailOrUsername': admin_username,
-                'password': admin_password
-            },
+            json=login_payload,
             timeout=10
         )
         
+        print(f"[DEBUG] Login response status: {response.status_code}")
+        print(f"[DEBUG] Login response headers: {dict(response.headers)}")
+        
         if response.status_code == 200:
+            print("[DEBUG] Login successful, parsing response...")
             data = response.json()
+            print(f"[DEBUG] Login response keys: {list(data.keys()) if data else 'No data'}")
+            
             token = data.get('token')
-            
-            # Set token expiry to 1 hour from now (adjust based on actual token lifetime)
-            token_cache['token'] = token
-            token_cache['expiry'] = current_time + 3600  # 1 hour
-            
-            return token
+            if token:
+                print(f"[DEBUG] Token received: {token[:20]}...")
+                # Set token expiry to 1 hour from now
+                token_cache['token'] = token
+                token_cache['expiry'] = current_time + 3600  # 1 hour
+                print(f"[DEBUG] Token cached with expiry: {token_cache['expiry']}")
+                return token
+            else:
+                print("[ERROR] No token found in login response")
+                print(f"[DEBUG] Full response: {data}")
+                return None
         else:
-            print(f"Admin login failed: {response.status_code} - {response.text}")
+            print(f"[ERROR] Admin login failed: {response.status_code}")
+            try:
+                error_data = response.json()
+                print(f"[ERROR] Login error response: {error_data}")
+            except:
+                print(f"[ERROR] Login error text: {response.text}")
             return None
+            
+    except requests.exceptions.Timeout as e:
+        print(f"[ERROR] Login request timeout: {e}")
+        return None
+    except requests.exceptions.ConnectionError as e:
+        print(f"[ERROR] Login connection error: {e}")
+        return None
     except Exception as e:
-        print(f"Error during admin login: {e}")
+        print(f"[ERROR] Error during admin login: {e}")
+        print(f"[DEBUG] Error type: {type(e).__name__}")
+        import traceback
+        print(f"[DEBUG] Full traceback: {traceback.format_exc()}")
         return None
 
 def create_user_in_palmr_api(user_data):
-    """Create user in Palmr API using admin token"""
+    """Create user in Palmr API using admin token with detailed debugging"""
     try:
+        print(f"[DEBUG] Starting Palmr API user creation for: {user_data.get('username', 'Unknown')}")
+        
         # Get admin token
+        print("[DEBUG] Attempting to get admin token...")
         token = get_admin_token()
         if not token:
+            print("[ERROR] Failed to obtain admin token")
             return False, None
         
-        # Add authorization header with token
+        print(f"[DEBUG] Admin token obtained successfully: {token[:20]}...")
+        
+        # Prepare headers
         headers = {
             'Authorization': f'Bearer {token}',
             'Content-Type': 'application/json'
         }
+        print(f"[DEBUG] Request headers prepared: {headers}")
         
+        # Log the request data (excluding sensitive info)
+        safe_user_data = user_data.copy()
+        if 'password' in safe_user_data:
+            safe_user_data['password'] = '***HIDDEN***'
+        print(f"[DEBUG] Request payload: {safe_user_data}")
+        print(f"[DEBUG] Target URL: {PALMR_REGISTER_URL}")
+        
+        # Make the API request
+        print("[DEBUG] Sending POST request to Palmr API...")
         response = requests.post(
             PALMR_REGISTER_URL,
             json=user_data,
@@ -79,9 +139,60 @@ def create_user_in_palmr_api(user_data):
             timeout=10
         )
         
-        return response.status_code == 200 or response.status_code == 201, response
+        # Log response details
+        print(f"[DEBUG] Response status code: {response.status_code}")
+        print(f"[DEBUG] Response headers: {dict(response.headers)}")
+        
+        # Log response content
+        try:
+            response_json = response.json()
+            print(f"[DEBUG] Response JSON: {response_json}")
+        except Exception as json_error:
+            print(f"[DEBUG] Response text (not JSON): {response.text}")
+            print(f"[DEBUG] JSON parsing error: {json_error}")
+        
+        # Check for success status codes
+        if response.status_code in [200, 201]:
+            print("[SUCCESS] User created successfully in Palmr API")
+            return True, response
+        else:
+            print(f"[ERROR] Palmr API returned error status: {response.status_code}")
+            print(f"[ERROR] Error response: {response.text}")
+            
+            # Check for specific error types
+            if response.status_code == 400:
+                print("[ERROR] Bad Request - Check request payload format")
+            elif response.status_code == 401:
+                print("[ERROR] Unauthorized - Token might be invalid or expired")
+            elif response.status_code == 403:
+                print("[ERROR] Forbidden - Admin account might not have permission")
+            elif response.status_code == 409:
+                print("[ERROR] Conflict - User might already exist in Palmr")
+            elif response.status_code == 422:
+                print("[ERROR] Unprocessable Entity - Validation errors")
+            elif response.status_code >= 500:
+                print("[ERROR] Server Error - Palmr API internal error")
+            
+            return False, response
+            
+    except requests.exceptions.Timeout as e:
+        print(f"[ERROR] Request timeout: {e}")
+        return False, None
+    except requests.exceptions.ConnectionError as e:
+        print(f"[ERROR] Connection error: {e}")
+        print("[DEBUG] Check if Palmr API URL is correct and accessible")
+        return False, None
+    except requests.exceptions.HTTPError as e:
+        print(f"[ERROR] HTTP error: {e}")
+        return False, None
     except requests.exceptions.RequestException as e:
-        print(f"Error connecting to Palmr API: {e}")
+        print(f"[ERROR] Request exception: {e}")
+        return False, None
+    except Exception as e:
+        print(f"[ERROR] Unexpected error in create_user_in_palmr_api: {e}")
+        print(f"[DEBUG] Error type: {type(e).__name__}")
+        import traceback
+        print(f"[DEBUG] Full traceback: {traceback.format_exc()}")
         return False, None
 
 @user_bp.route('/register', methods=['POST'])
