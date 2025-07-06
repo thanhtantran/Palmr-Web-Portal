@@ -52,9 +52,12 @@ def get_admin_token():
         }
         print(f"[DEBUG] Login payload prepared (password hidden)")
         
+        # Create a session to handle cookies
+        session = requests.Session()
+        
         # Login to get token
         print("[DEBUG] Sending login request...")
-        response = requests.post(
+        response = session.post(
             PALMR_LOGIN_URL,
             json=login_payload,
             timeout=10
@@ -68,7 +71,18 @@ def get_admin_token():
             data = response.json()
             print(f"[DEBUG] Login response keys: {list(data.keys()) if data else 'No data'}")
             
+            # Check for token in JSON response first
             token = data.get('token')
+            
+            # If not in JSON, get from cookies
+            if not token:
+                print("[DEBUG] Token not in JSON response, checking session cookies...")
+                token = session.cookies.get('token')
+                if token:
+                    print(f"[DEBUG] Token extracted from session cookies: {token[:20]}...")
+                else:
+                    print("[ERROR] No token found in cookies either")
+            
             if token:
                 print(f"[DEBUG] Token received: {token[:20]}...")
                 # Set token expiry to 1 hour from now
@@ -77,7 +91,7 @@ def get_admin_token():
                 print(f"[DEBUG] Token cached with expiry: {token_cache['expiry']}")
                 return token
             else:
-                print("[ERROR] No token found in login response")
+                print("[ERROR] No token found in login response or cookies")
                 print(f"[DEBUG] Full response: {data}")
                 return None
         else:
@@ -101,7 +115,7 @@ def get_admin_token():
         import traceback
         print(f"[DEBUG] Full traceback: {traceback.format_exc()}")
         return None
-
+        
 def create_user_in_palmr_api(user_data):
     """Create user in Palmr API using admin token with detailed debugging"""
     try:
