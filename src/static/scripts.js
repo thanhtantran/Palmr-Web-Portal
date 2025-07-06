@@ -88,7 +88,27 @@ function handleLogin(event) {
 
 async function handleRegister(event) {
     event.preventDefault();
-    clearMessages();
+    // Clear previous errors
+    clearErrors();
+    
+    // Debug: Check if elements exist
+    const elements = {
+        firstName: document.getElementById('register-firstName'),
+        lastName: document.getElementById('register-lastName'),
+        username: document.getElementById('register-username'),
+        email: document.getElementById('register-email'),
+        password: document.getElementById('register-password'),
+        confirmPassword: document.getElementById('register-confirm-password')
+    };
+    
+    // Check for missing elements
+    for (const [key, element] of Object.entries(elements)) {
+        if (!element) {
+            console.error(`Element not found: register-${key}`);
+            showResult(`Form element missing: ${key}`, 'error');
+            return;
+        }
+    }
     
     const firstName = document.getElementById('register-firstName').value.trim();
     const lastName = document.getElementById('register-lastName').value.trim();
