@@ -20,28 +20,50 @@ function clearMessages() {
     document.querySelectorAll('input').forEach(input => input.classList.remove('error'));
 }
 
-function showLoading(show) {
-    document.getElementById('loading').style.display = show ? 'block' : 'none';
-    document.querySelectorAll('.submit-btn').forEach(btn => btn.disabled = show);
+// Fixed: Added separate functions for show/hide loading
+function showLoading() {
+    document.getElementById('loading').style.display = 'block';
+    document.querySelectorAll('.submit-btn').forEach(btn => btn.disabled = true);
 }
 
-function showResult(message, isSuccess) {
+function hideLoading() {
+    document.getElementById('loading').style.display = 'none';
+    document.querySelectorAll('.submit-btn').forEach(btn => btn.disabled = false);
+}
+
+function showResult(message, type) {
     const resultDiv = document.getElementById('result-message');
     resultDiv.textContent = message;
-    resultDiv.className = 'result-message ' + (isSuccess ? 'success' : 'error');
+    resultDiv.className = 'result-message ' + (type === 'success' ? 'success' : 'error');
     resultDiv.style.display = 'block';
 }
 
-function showFieldError(fieldId, message) {
-    const errorDiv = document.getElementById(fieldId + '-error');
-    const input = document.getElementById('register-' + fieldId);
+// Fixed: Renamed to match usage in handleRegister
+function showError(errorId, message) {
+    const errorDiv = document.getElementById(errorId);
+    const fieldName = errorId.replace('-error', '');
+    const input = document.getElementById('register-' + fieldName);
     
-    errorDiv.textContent = message;
-    errorDiv.style.display = 'block';
-    input.classList.add('error');
+    if (errorDiv) {
+        errorDiv.textContent = message;
+        errorDiv.style.display = 'block';
+    }
+    if (input) {
+        input.classList.add('error');
+    }
 }
 
-function validateEmail(email) {
+// Fixed: Added missing clearErrors function
+function clearErrors() {
+    document.querySelectorAll('.error-message').forEach(msg => {
+        msg.style.display = 'none';
+        msg.textContent = '';
+    });
+    document.querySelectorAll('input').forEach(input => input.classList.remove('error'));
+}
+
+// Fixed: Renamed to match usage in handleRegister
+function isValidEmail(email) {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return emailRegex.test(email);
 }
@@ -82,11 +104,11 @@ function handleLogin(event) {
         popup.focus();
     } else {
         // Fallback if popup is blocked
-        showResult('Popup blocked. Please allow popups for this site and try again.', false);
+        showResult('Popup blocked. Please allow popups for this site and try again.', 'error');
     }
 }
 
-async function handleRegister(event) {
+function handleRegister(event) {
     event.preventDefault();
     
     // Clear previous errors
@@ -132,8 +154,8 @@ async function handleRegister(event) {
     if (!password) {
         showError('password-error', 'Vui lòng nhập mật khẩu');
         hasError = true;
-    } else if (password.length < 6) {
-        showError('password-error', 'Mật khẩu phải có ít nhất 6 ký tự');
+    } else if (password.length < 8) {
+        showError('password-error', 'Mật khẩu phải có ít nhất 8 ký tự');
         hasError = true;
     }
     
@@ -190,7 +212,9 @@ document.addEventListener('DOMContentLoaded', function() {
     document.querySelectorAll('input').forEach(input => {
         input.addEventListener('focus', function() {
             this.classList.remove('error');
-            const errorMsg = document.getElementById(this.name + '-error');
+            // Fixed: Get error element by field name
+            const fieldName = this.id.replace('register-', '');
+            const errorMsg = document.getElementById(fieldName + '-error');
             if (errorMsg) {
                 errorMsg.style.display = 'none';
             }

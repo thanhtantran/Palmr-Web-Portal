@@ -29,8 +29,8 @@ def decrypt_text(encrypted_text):
     return cipher_suite.decrypt(encrypted_text.encode()).decode()
 
 # Admin credentials - these are encrypted at rest
-ADMIN_USERNAME =  
-ADMIN_PASSWORD =  
+ADMIN_USERNAME = 'gAAAAABoapZ8lm-jHfL-rFchp8qkwhaAyXfliKnp5oQbY6Cr42Wbv5s7KAaCF4BKQ8XWZML3RdisvKkbLJuSYwxw7NaSVbW2Bw=='
+ADMIN_PASSWORD = 'gAAAAABoapZ8_GTEYbhL-LoZva8GDaY1uFtcucQDphQ-YGtT6uS8BkU4F0llrsQNxURlOzPMqdR93hGwGTZIKx3-VxIiw7mcmQ=='
 
 # Palmr API configuration
 PALMR_API_BASE_URL = 'http://192.168.88.3:3333'
