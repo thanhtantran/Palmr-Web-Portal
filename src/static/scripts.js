@@ -20,50 +20,28 @@ function clearMessages() {
     document.querySelectorAll('input').forEach(input => input.classList.remove('error'));
 }
 
-// Fixed: Added separate functions for show/hide loading
-function showLoading() {
-    document.getElementById('loading').style.display = 'block';
-    document.querySelectorAll('.submit-btn').forEach(btn => btn.disabled = true);
+function showLoading(show) {
+    document.getElementById('loading').style.display = show ? 'block' : 'none';
+    document.querySelectorAll('.submit-btn').forEach(btn => btn.disabled = show);
 }
 
-function hideLoading() {
-    document.getElementById('loading').style.display = 'none';
-    document.querySelectorAll('.submit-btn').forEach(btn => btn.disabled = false);
-}
-
-function showResult(message, type) {
+function showResult(message, isSuccess) {
     const resultDiv = document.getElementById('result-message');
     resultDiv.textContent = message;
-    resultDiv.className = 'result-message ' + (type === 'success' ? 'success' : 'error');
+    resultDiv.className = 'result-message ' + (isSuccess ? 'success' : 'error');
     resultDiv.style.display = 'block';
 }
 
-// Fixed: Renamed to match usage in handleRegister
-function showError(errorId, message) {
-    const errorDiv = document.getElementById(errorId);
-    const fieldName = errorId.replace('-error', '');
-    const input = document.getElementById('register-' + fieldName);
+function showFieldError(fieldId, message) {
+    const errorDiv = document.getElementById(fieldId + '-error');
+    const input = document.getElementById('register-' + fieldId);
     
-    if (errorDiv) {
-        errorDiv.textContent = message;
-        errorDiv.style.display = 'block';
-    }
-    if (input) {
-        input.classList.add('error');
-    }
+    errorDiv.textContent = message;
+    errorDiv.style.display = 'block';
+    input.classList.add('error');
 }
 
-// Fixed: Added missing clearErrors function
-function clearErrors() {
-    document.querySelectorAll('.error-message').forEach(msg => {
-        msg.style.display = 'none';
-        msg.textContent = '';
-    });
-    document.querySelectorAll('input').forEach(input => input.classList.remove('error'));
-}
-
-// Fixed: Renamed to match usage in handleRegister
-function isValidEmail(email) {
+function validateEmail(email) {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return emailRegex.test(email);
 }
@@ -104,17 +82,14 @@ function handleLogin(event) {
         popup.focus();
     } else {
         // Fallback if popup is blocked
-        showResult('Popup blocked. Please allow popups for this site and try again.', 'error');
+        showResult('Popup blocked. Please allow popups for this site and try again.', false);
     }
 }
 
-function handleRegister(event) {
+async function handleRegister(event) {
     event.preventDefault();
+    clearMessages();
     
-    // Clear previous errors
-    clearErrors();
-    
-    // Get form data
     const firstName = document.getElementById('register-firstName').value.trim();
     const lastName = document.getElementById('register-lastName').value.trim();
     const username = document.getElementById('register-username').value.trim();
@@ -122,88 +97,90 @@ function handleRegister(event) {
     const password = document.getElementById('register-password').value;
     const confirmPassword = document.getElementById('register-confirm-password').value;
     
-    // Validate form
-    let hasError = false;
+    // Basic validation
+    let hasErrors = false;
     
     if (!firstName) {
-        showError('firstName-error', 'Vui lòng nhập tên');
-        hasError = true;
+        showFieldError('firstName', 'firstName is required');
+        hasErrors = true;
     }
-    
+
     if (!lastName) {
-        showError('lastName-error', 'Vui lòng nhập họ');
-        hasError = true;
-    }
+        showFieldError('lastName', 'lastName is required');
+        hasErrors = true;
+    }    
     
     if (!username) {
-        showError('username-error', 'Vui lòng nhập tên đăng nhập');
-        hasError = true;
-    } else if (username.length < 3) {
-        showError('username-error', 'Tên đăng nhập phải có ít nhất 3 ký tự');
-        hasError = true;
+        showFieldError('username', 'Username is required');
+        hasErrors = true;
     }
     
     if (!email) {
-        showError('email-error', 'Vui lòng nhập email');
-        hasError = true;
-    } else if (!isValidEmail(email)) {
-        showError('email-error', 'Email không hợp lệ');
-        hasError = true;
+        showFieldError('email', 'Email is required');
+        hasErrors = true;
+    } else if (!validateEmail(email)) {
+        showFieldError('email', 'Please enter a valid email address');
+        hasErrors = true;
     }
     
     if (!password) {
-        showError('password-error', 'Vui lòng nhập mật khẩu');
-        hasError = true;
-    } else if (password.length < 8) {
-        showError('password-error', 'Mật khẩu phải có ít nhất 8 ký tự');
-        hasError = true;
+        showFieldError('password', 'Password is required');
+        hasErrors = true;
+    } else if (password.length < 6) {
+        showFieldError('password', 'Password must be at least 6 characters long');
+        hasErrors = true;
     }
     
     if (!confirmPassword) {
-        showError('confirm-password-error', 'Vui lòng xác nhận mật khẩu');
-        hasError = true;
+        showFieldError('confirm-password', 'Please confirm your password');
+        hasErrors = true;
     } else if (password !== confirmPassword) {
-        showError('confirm-password-error', 'Mật khẩu không khớp');
-        hasError = true;
+        showFieldError('confirm-password', 'Passwords do not match');
+        hasErrors = true;
     }
     
-    if (hasError) {
+    if (hasErrors) {
         return;
     }
     
-    // Show loading
-    showLoading();
+    showLoading(true);
     
-    // Send registration request
-    fetch('/api/register', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-            firstName: firstName,
-            lastName: lastName,
-            username: username,
-            email: email,
-            password: password
-        })
-    })
-    .then(response => response.json())
-    .then(data => {
-        hideLoading();
-        if (data.success) {
-            showResult(data.message, 'success');
+    try {
+        // Call our registration API
+        const response = await fetch('/api/register', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                lastName: lastName,
+                firstName: firstName,
+                username: username,
+                email: email,
+                password: password
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok) {
+            showResult('Registration successful! Your account has been created.', true);
             // Clear form
-            document.getElementById('register-form').querySelector('form').reset();
+            document.getElementById('register-lastName').value = '';
+            document.getElementById('register-firstName').value = '';
+            document.getElementById('register-username').value = '';
+            document.getElementById('register-email').value = '';
+            document.getElementById('register-password').value = '';
+            document.getElementById('register-confirm-password').value = '';
         } else {
-            showResult(data.error || 'Có lỗi xảy ra', 'error');
+            showResult(data.message || 'Registration failed. Please try again.', false);
         }
-    })
-    .catch(error => {
-        hideLoading();
-        console.error('Error:', error);
-        showResult('Có lỗi xảy ra. Vui lòng thử lại sau.', 'error');
-    });
+    } catch (error) {
+        console.error('Registration error:', error);
+        showResult('Network error. Please check your connection and try again.', false);
+    } finally {
+        showLoading(false);
+    }
 }
 
 // Add some interactive effects
@@ -212,9 +189,7 @@ document.addEventListener('DOMContentLoaded', function() {
     document.querySelectorAll('input').forEach(input => {
         input.addEventListener('focus', function() {
             this.classList.remove('error');
-            // Fixed: Get error element by field name
-            const fieldName = this.id.replace('register-', '');
-            const errorMsg = document.getElementById(fieldName + '-error');
+            const errorMsg = document.getElementById(this.name + '-error');
             if (errorMsg) {
                 errorMsg.style.display = 'none';
             }
