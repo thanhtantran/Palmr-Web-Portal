@@ -1,23 +1,84 @@
 from flask import Blueprint, jsonify, request
 import requests
 import re
+import time
 from src.models.user import User, db
+from src.config import decrypt_text, ADMIN_USERNAME, ADMIN_PASSWORD, PALMR_LOGIN_URL, PALMR_REGISTER_URL
 
 user_bp = Blueprint('user', __name__)
+
+# Token cache with expiration
+token_cache = {
+    'token': None,
+    'expiry': 0  # Unix timestamp when token expires
+}
 
 def validate_email(email):
     """Simple email validation using regex"""
     pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
     return re.match(pattern, email) is not None
 
-def create_user_in_palmr_api(user_data):
-    """Create user in Palmr API at 192.168.88.3:3333"""
+def get_admin_token():
+    """Get admin token with caching"""
+    current_time = time.time()
+    
+    # If token exists and is not expired (giving 5 min buffer before actual expiry)
+    if token_cache['token'] and token_cache['expiry'] > current_time + 300:
+        return token_cache['token']
+    
+    # Otherwise, get a new token
     try:
+        # Decrypt admin credentials
+        admin_username = decrypt_text(ADMIN_USERNAME)
+        admin_password = decrypt_text(ADMIN_PASSWORD)
+        
+        # Login to get token
         response = requests.post(
-            'http://192.168.88.3:3333/auth/register',
-            json=user_data,
+            PALMR_LOGIN_URL,
+            json={
+                'emailOrUsername': admin_username,
+                'password': admin_password
+            },
             timeout=10
         )
+        
+        if response.status_code == 200:
+            data = response.json()
+            token = data.get('token')
+            
+            # Set token expiry to 1 hour from now (adjust based on actual token lifetime)
+            token_cache['token'] = token
+            token_cache['expiry'] = current_time + 3600  # 1 hour
+            
+            return token
+        else:
+            print(f"Admin login failed: {response.status_code} - {response.text}")
+            return None
+    except Exception as e:
+        print(f"Error during admin login: {e}")
+        return None
+
+def create_user_in_palmr_api(user_data):
+    """Create user in Palmr API using admin token"""
+    try:
+        # Get admin token
+        token = get_admin_token()
+        if not token:
+            return False, None
+        
+        # Add authorization header with token
+        headers = {
+            'Authorization': f'Bearer {token}',
+            'Content-Type': 'application/json'
+        }
+        
+        response = requests.post(
+            PALMR_REGISTER_URL,
+            json=user_data,
+            headers=headers,
+            timeout=10
+        )
+        
         return response.status_code == 200 or response.status_code == 201, response
     except requests.exceptions.RequestException as e:
         print(f"Error connecting to Palmr API: {e}")
