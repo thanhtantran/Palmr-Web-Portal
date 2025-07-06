@@ -86,7 +86,7 @@ function handleLogin(event) {
     }
 }
 
-async function handleRegister(event) {
+function handleRegister(event) {
     event.preventDefault();
     // Clear previous errors
     clearErrors();
