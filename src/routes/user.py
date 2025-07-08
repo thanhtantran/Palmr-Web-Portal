@@ -217,8 +217,24 @@ def create_palmr_user(user_data):
 def register():
     try:
         data = request.get_json()
-        print(f"[DEBUG] Received registration data: {data}")
         
+        # Validate reCAPTCHA
+        recaptcha_token = data.get('recaptchaToken')
+        if not recaptcha_token:
+            return jsonify({'error': 'Vui lòng xác nhận reCAPTCHA'}), 400
+            
+        # Verify with Google reCAPTCHA API
+        verify_url = 'https://www.google.com/recaptcha/api/siteverify'
+        payload = {
+            'secret': current_app.config['RECAPTCHA_SECRET_KEY'],
+            'response': recaptcha_token
+        }
+        response = requests.post(verify_url, data=payload)
+        result = response.json()
+        
+        if not result.get('success'):
+            return jsonify({'error': 'Xác thực reCAPTCHA thất bại'}), 400
+
         # Validate required fields
         required_fields = ['firstName', 'lastName', 'username', 'email', 'password']
         for field in required_fields:

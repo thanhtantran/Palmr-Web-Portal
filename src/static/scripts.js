@@ -183,12 +183,14 @@ async function handleRegister(event) {
   if (!registerCaptchaSuccess) {
       showResult('Vui lòng xác nhận reCAPTCHA', false);
       return;
-  }  
+  }
+  
+  // Get the reCAPTCHA token
+  const recaptchaToken = grecaptcha.getResponse();
   
   showLoading(true);
   
   try {
-      // Send request to your Flask backend
       const response = await fetch('/api/register', {
           method: 'POST',
           headers: {
@@ -199,7 +201,8 @@ async function handleRegister(event) {
               lastName: lastName,
               username: username,
               email: email,
-              password: password
+              password: password,
+              recaptchaToken: recaptchaToken  // Add this line
           })
       });
       
