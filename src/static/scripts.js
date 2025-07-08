@@ -1,16 +1,11 @@
-let loginCaptchaSuccess = false;
 let registerCaptchaSuccess = false;
-
-function onLoginCaptchaSuccess(token) {
-    loginCaptchaSuccess = true;
-}
 
 function onRegisterCaptchaSuccess(token) {
     registerCaptchaSuccess = true;
+	console.log("Captcha success!");
 }
 
 function resetCaptcha() {
-    loginCaptchaSuccess = false;
     registerCaptchaSuccess = false;
     grecaptcha.reset();
 }
@@ -80,7 +75,6 @@ function validateEmail(email) {
 
 function handleLogin(event) {
   event.preventDefault();
-  clearMessages();
   
   // Open Palmr login in a popup window without address bar
   const palmrUrl = 'https://app.saveyourfile.online/login';
@@ -120,8 +114,6 @@ function handleLogin(event) {
 
 async function handleRegister(event) {
   event.preventDefault();
-  // Clear previous errors
-  clearErrors();
   
   // Get form data
   const firstName = document.getElementById('register-firstName').value.trim();
@@ -163,8 +155,8 @@ async function handleRegister(event) {
   if (!password) {
       showFieldError('password', 'Mật khẩu là bắt buộc');
       hasErrors = true;
-  } else if (password.length < 6) {
-      showFieldError('password', 'Mật khẩu phải có ít nhất 6 ký tự');
+  } else if (password.length < 8) {
+      showFieldError('password', 'Mật khẩu phải có ít nhất 8 ký tự');
       hasErrors = true;
   }
   
@@ -176,14 +168,18 @@ async function handleRegister(event) {
       hasErrors = true;
   }
   
+  console.log("registerCaptchaSuccess:", registerCaptchaSuccess);
+  if (!registerCaptchaSuccess) {
+	  showResult('Xác nhận reCAPTCHA bị lỗi', false);
+	  hasErrors = true;
+  }
+  
   if (hasErrors) {
       return;
   }
   
-  if (!registerCaptchaSuccess) {
-      showResult('Vui lòng xác nhận reCAPTCHA', false);
-      return;
-  }  
+  // Get the reCAPTCHA token
+  const recaptchaToken = grecaptcha.getResponse();  
   
   showLoading(true);
   
@@ -199,7 +195,8 @@ async function handleRegister(event) {
               lastName: lastName,
               username: username,
               email: email,
-              password: password
+              password: password,
+			  recaptchaToken: recaptchaToken
           })
       });
       
@@ -215,6 +212,7 @@ async function handleRegister(event) {
           document.getElementById('register-email').value = '';
           document.getElementById('register-password').value = '';
           document.getElementById('register-confirm-password').value = '';
+		  clearMessages();
       } else {
           // Error - show the error message from your Python backend
           showResult(data.error || 'Đăng ký thất bại. Vui lòng thử lại.', false);

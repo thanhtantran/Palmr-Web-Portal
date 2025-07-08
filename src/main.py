@@ -1,15 +1,23 @@
 import os
 import sys
-# DON'T CHANGE THIS !!!
+from datetime import datetime
+
+# Setup path
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
-from flask import Flask, send_from_directory
+from flask import Flask, send_from_directory, render_template
 from flask_cors import CORS
 from src.models.user import db
 from src.routes.user import user_bp
 
-app = Flask(__name__, static_folder=os.path.join(os.path.dirname(__file__), 'static'))
+app = Flask(
+    __name__,
+    static_folder=os.path.join(os.path.dirname(__file__), 'static'),
+    template_folder=os.path.join(os.path.dirname(__file__), 'templates')  # ← important!
+)
+
 app.config['SECRET_KEY'] = 'asdf#FGSgvasgf$5$WGT'
+app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0
 
 # Enable CORS for all routes
 CORS(app)
@@ -30,15 +38,13 @@ def serve(path):
     if static_folder_path is None:
             return "Static folder not configured", 404
 
-    if path != "" and os.path.exists(os.path.join(static_folder_path, path)):
+    # Serve static file if it exists
+    requested_file = os.path.join(static_folder_path, path)
+    if path != "" and os.path.exists(requested_file):
         return send_from_directory(static_folder_path, path)
-    else:
-        index_path = os.path.join(static_folder_path, 'index.html')
-        if os.path.exists(index_path):
-            return send_from_directory(static_folder_path, 'index.html')
-        else:
-            return "index.html not found", 404
 
+    # Otherwise render index.html from templates
+    return render_template("index.html", time=int(datetime.utcnow().timestamp()))
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)

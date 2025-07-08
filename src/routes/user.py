@@ -3,7 +3,7 @@ import requests
 import re
 import time
 from src.models.user import User, db
-from src.config import decrypt_text, ADMIN_USERNAME, ADMIN_PASSWORD, PALMR_LOGIN_URL, PALMR_REGISTER_URL
+from src.config import decrypt_text, ADMIN_USERNAME, ADMIN_PASSWORD, PALMR_LOGIN_URL, PALMR_REGISTER_URL, RECAPTCHA_SECRET_KEY, RECAPTCHA_SITE_KEY
 
 user_bp = Blueprint('user', __name__)
 
@@ -218,6 +218,24 @@ def register():
     try:
         data = request.get_json()
         print(f"[DEBUG] Received registration data: {data}")
+        
+        # Validate reCAPTCHA
+        recaptcha_token = data.get('recaptchaToken')
+
+        if not recaptcha_token:
+            return jsonify({'error': 'Không nhận được reCAPTCHA token'}), 400
+            
+        # Verify with Google reCAPTCHA API
+        verify_url = 'https://www.google.com/recaptcha/api/siteverify'
+        payload = {
+            'secret': RECAPTCHA_SECRET_KEY,
+            'response': recaptcha_token
+        }
+        response = requests.post(verify_url, data=payload)
+        result = response.json()
+        
+        if not result.get('success'):
+            return jsonify({'error': 'Xác thực reCAPTCHA thất bại'}), 400        
         
         # Validate required fields
         required_fields = ['firstName', 'lastName', 'username', 'email', 'password']

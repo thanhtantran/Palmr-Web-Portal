@@ -2,10 +2,10 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+  <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='favicon.ico') }}" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>SaveYourFile.online - Login & Register</title>
-  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}?v={{ time }}">
   <script src="https://www.google.com/recaptcha/api.js" async defer></script>  
 </head>
 <body>
@@ -74,7 +74,7 @@
                       <input type="password" id="register-confirm-password" name="confirm-password" required>
                       <div class="error-message" id="confirm-password-error"></div>
                   </div>
-                  <div class="g-recaptcha" data-sitekey="6Lf3DXorAAAAAGF9FdJ60Se6lIVT9uyg72BgANn9" data-callback="onLoginCaptchaSuccess"></div>
+                  <div class="g-recaptcha" data-sitekey="6Lf3DXorAAAAAGF9FdJ60Se6lIVT9uyg72BgANn9" data-callback="onRegisterCaptchaSuccess"></div>
                   <button type="submit" class="submit-btn">
                       Tạo tài khoản
                   </button>
@@ -90,6 +90,6 @@
       </div>
   </div>
 
-  <script src="scripts.js"></script>
+  <script src="{{ url_for('static', filename='scripts.js') }}?v={{ time }}"></script>
 </body>
 </html>
