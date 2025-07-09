@@ -37,12 +37,12 @@ function clearMessages() {
       msg.style.display = 'none';
       msg.textContent = '';
   });
-  document.querySelectorAll('input').forEach(input => input.classList.remove('error'));
-  resetCaptcha();
+  document.querySelectorAll('input').forEach(input => input.classList.remove('error'));  
 }
 
 function clearErrors() {
   clearMessages();
+  resetCaptcha();
 }
 
 function showLoading(show) {
@@ -175,6 +175,7 @@ async function handleRegister(event) {
   }
   
   if (hasErrors) {
+      clearErrors()
       return;
   }
   
@@ -212,7 +213,7 @@ async function handleRegister(event) {
           document.getElementById('register-email').value = '';
           document.getElementById('register-password').value = '';
           document.getElementById('register-confirm-password').value = '';
-		  clearMessages();
+		  clearErrors();
       } else {
           // Error - show the error message from your Python backend
           showResult(data.error || 'Đăng ký thất bại. Vui lòng thử lại.', false);
