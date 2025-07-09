@@ -32,8 +32,6 @@ def send_verification_email(email):
         print(f"[ERROR] Failed to send verification email: {e}")
         # Consider logging this error properly
 
-
-
 def validate_email(email):
     """Simple email validation using regex"""
     pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
@@ -174,7 +172,6 @@ def create_palmr_user(user_data):
             'username': user_data['username'].strip(),
             'email': user_data['email'].strip(),
             'password': user_data['password'],
-            'isActive': "false"
         }
         
         # Add image field if provided
@@ -200,7 +197,6 @@ def create_palmr_user(user_data):
         
         if response.status_code == 200 or response.status_code == 201:
             print("[DEBUG] User creation successful!")
-            send_verification_email(user_data['email'])
             try:
                 response_data = response.json()
                 print(f"[DEBUG] Success response: {response_data}")
@@ -332,13 +328,30 @@ def register():
             'username': username,
             'email': email,
             'password': password,
-            'isActive': "false"
         }
         
         # Create user in Palmr API
         print("[DEBUG] Creating user in Palmr API...")
         if create_palmr_user(user_data):
             print("[DEBUG] User created successfully in Palmr API")
+            try:
+                # Get list of users
+                response = requests.get('http://192.168.88.3:3333/users')
+                users = response.json()
+                
+                # Find user by email
+                user_id = None
+                for user in users:
+                    if user['email'] == user_data['email']:
+                        user_id = user['id']
+                        break
+                        
+                if user_id:
+                    # Deactivate the user
+                    requests.patch(f'http://192.168.88.3:3333/users/{user_id}/deactivate')
+            except Exception as e:
+                print(f"[ERROR] Failed to deactivate user: {e}")            
+            send_verification_email(user_data['email'])
             return jsonify({
                 'message': 'Tài khoản đã được tạo thành công! Vui lòng kiểm tra email để xác minh tài khoản.',
                 'success': True
