@@ -23,10 +23,14 @@ def send_verification_email(email):
     verification_link = f"https://saveyourfile.online/verify?email={email}"
     msg.set_content(f"Nhấn vào link sau để xác thực email: {verification_link}")
     
-    with smtplib.SMTP('SMTP_SERVER', SMTP_PORT) as smtp:
-        smtp.starttls()
-        smtp.login('SMTP_USERNAME', 'SMTP_PASSWORD')
-        smtp.send_message(msg)
+    try:
+        with smtplib.SMTP(SMTP_SERVER, SMTP_PORT) as smtp:
+            smtp.starttls()
+            smtp.login(SMTP_USERNAME, SMTP_PASSWORD)
+            smtp.send_message(msg)
+    except Exception as e:
+        print(f"[ERROR] Failed to send verification email: {e}")
+        # Consider logging this error properly
 
 
 
@@ -297,6 +301,7 @@ def register():
         email = data['email'].strip()
         password = data['password']
         
+        
         print(f"[DEBUG] Extracted data - firstName: {firstName}, lastName: {lastName}, username: {username}, email: {email}")
         
         # Validate data
@@ -326,7 +331,8 @@ def register():
             'lastName': lastName,
             'username': username,
             'email': email,
-            'password': password
+            'password': password,
+            'isActive': "false"
         }
         
         # Create user in Palmr API
