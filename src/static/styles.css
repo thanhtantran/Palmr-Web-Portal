@@ -54,6 +54,11 @@ body {
     font-size: 1.1rem;
 }
 
+.footer {
+    opacity: 0.9;
+    font-size: 0.9rem; 
+}
+
 .form-container {
     padding: 40px 30px;
 }

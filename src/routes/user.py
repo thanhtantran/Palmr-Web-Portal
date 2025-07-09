@@ -152,7 +152,8 @@ def create_palmr_user(user_data):
             'lastName': user_data.get('lastName', '').strip(),
             'username': user_data['username'].strip(),
             'email': user_data['email'].strip(),
-            'password': user_data['password']
+            'password': user_data['password'],
+            'isActive': "false"
         }
         
         # Add image field if provided
