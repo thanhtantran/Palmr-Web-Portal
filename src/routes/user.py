@@ -3,7 +3,9 @@ import requests
 import re
 import time
 from src.models.user import User, db
-from src.config import decrypt_text, ADMIN_USERNAME, ADMIN_PASSWORD, PALMR_LOGIN_URL, PALMR_REGISTER_URL, RECAPTCHA_SECRET_KEY, RECAPTCHA_SITE_KEY
+from src.config import decrypt_text, ADMIN_USERNAME, ADMIN_PASSWORD, PALMR_LOGIN_URL, PALMR_REGISTER_URL, RECAPTCHA_SECRET_KEY, RECAPTCHA_SITE_KEY, SMTP_SERVER, SMTP_PASSWORD, SMTP_USERNAME, SMTP_PORT
+import smtplib
+from email.message import EmailMessage
 
 user_bp = Blueprint('user', __name__)
 
@@ -12,6 +14,21 @@ token_cache = {
     'token': None,
     'expiry': 0  # Unix timestamp when token expires
 }
+
+def send_verification_email(email):
+    msg = EmailMessage()
+    msg['Subject'] = 'Xác thực email SaveYourFile.online'
+    msg['From'] = 'let@saveyourfile.online'
+    msg['To'] = email
+    verification_link = f"https://saveyourfile.online/verify?email={email}"
+    msg.set_content(f"Nhấn vào link sau để xác thực email: {verification_link}")
+    
+    with smtplib.SMTP('SMTP_SERVER', SMTP_PORT) as smtp:
+        smtp.starttls()
+        smtp.login('SMTP_USERNAME', 'SMTP_PASSWORD')
+        smtp.send_message(msg)
+
+
 
 def validate_email(email):
     """Simple email validation using regex"""
@@ -179,6 +196,7 @@ def create_palmr_user(user_data):
         
         if response.status_code == 200 or response.status_code == 201:
             print("[DEBUG] User creation successful!")
+            send_verification_email(user_data['email'])
             try:
                 response_data = response.json()
                 print(f"[DEBUG] Success response: {response_data}")
@@ -199,7 +217,6 @@ def create_palmr_user(user_data):
                 print("[ERROR] Conflict - User might already exist")
             elif response.status_code == 422:
                 print("[ERROR] Unprocessable Entity - Validation error")
-            
             return False
         
     except requests.exceptions.Timeout as e:
@@ -213,6 +230,34 @@ def create_palmr_user(user_data):
         import traceback
         print(f"[DEBUG] Full traceback: {traceback.format_exc()}")
         return False
+
+@user_bp.route('/verify', methods=['GET'])
+def verify_email():
+    email = request.args.get('email')
+    
+    # Get all users from API
+    response = requests.get('http://192.168.88.3:3333/users')
+    users = response.json()
+    
+    # Find matching user
+    user_id = None
+    for user in users:
+        if user['email'] == email:
+            user_id = user['id']
+            break
+    
+    if user_id:
+        # Activate user
+        requests.patch(f'http://192.168.88.3:3333/users/{user_id}/activate')
+        
+        # Update local database
+        user = User.query.filter_by(email=email).first()
+        if user:
+            user.verified = True
+            db.session.commit()
+        
+        return 'Email verified successfully!'
+    return 'User not found', 404
 
 @user_bp.route('/register', methods=['POST'])
 def register():

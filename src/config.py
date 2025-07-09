@@ -40,3 +40,9 @@ PALMR_REGISTER_URL = f'{PALMR_API_BASE_URL}/auth/register'
 # reCAPTCHA configuration
 RECAPTCHA_SITE_KEY = '6Lf3DXorAAAAAGF9FdJ60Se6lIVT9uyg72BgANn9'  # Should match your frontend
 RECAPTCHA_SECRET_KEY = '6Lf3DXorAAAAAJYu9IDKUSvncag1kU_pT9L37qdY'  # Get from Google reCAPTCHA admin
+
+# SMTP configuration
+SMTP_SERVER = 'smtp.postmarkapp.com'
+SMTP_PASSWORD = '23eef7c7-1986-446b-af8c-e203939e6b31'
+SMTP_USERNAME = '23eef7c7-1986-446b-af8c-e203939e6b31'
+SMTP_PORT = 587
