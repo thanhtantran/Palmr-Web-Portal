@@ -23,9 +23,9 @@ def send_verification_email(email):
     verification_link = f"https://saveyourfile.online/verify?email={email}"
     msg.set_content(f"Nhấn vào link sau để xác thực email: {verification_link}")
     
-    with smtplib.SMTP('SMTP_SERVER', SMTP_PORT) as smtp:
+    with smtplib.SMTP('smtp.postmarkapp.com', SMTP_PORT) as smtp:
         smtp.starttls()
-        smtp.login('SMTP_USERNAME', 'SMTP_PASSWORD')
+        smtp.login(SMTP_USERNAME, SMTP_PASSWORD)
         smtp.send_message(msg)
 
 
@@ -196,7 +196,6 @@ def create_palmr_user(user_data):
         
         if response.status_code == 200 or response.status_code == 201:
             print("[DEBUG] User creation successful!")
-            send_verification_email(user_data['email'])
             try:
                 response_data = response.json()
                 print(f"[DEBUG] Success response: {response_data}")
@@ -333,6 +332,25 @@ def register():
         print("[DEBUG] Creating user in Palmr API...")
         if create_palmr_user(user_data):
             print("[DEBUG] User created successfully in Palmr API")
+            try:
+                # Get list of users
+                response = requests.get('http://192.168.88.3:3333/users')
+                users = response.json()
+                
+                # Find user by email
+                user_id = None
+                for user in users:
+                    if user['email'] == email:
+                        user_id = user['id']
+                        break
+                        
+                if user_id:
+                    # Deactivate the user
+                    requests.patch(f'http://192.168.88.3:3333/users/{user_id}/deactivate')
+            except Exception as e:
+                print(f"[ERROR] Failed to deactivate user: {e}")
+                
+            send_verification_email(email)         
             return jsonify({
                 'message': 'Tài khoản đã được tạo thành công! Vui lòng kiểm tra email để xác minh tài khoản.',
                 'success': True
