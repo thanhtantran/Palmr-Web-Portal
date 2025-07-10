@@ -23,6 +23,7 @@ def send_verification_email(email):
     verification_link = f"https://saveyourfile.online/verify?email={email}"
     msg.set_content(f"Nhấn vào link sau để xác thực email: {verification_link}")
     
+<<<<<<< HEAD
     try:
         with smtplib.SMTP(SMTP_SERVER, SMTP_PORT) as smtp:
             smtp.starttls()
@@ -31,6 +32,14 @@ def send_verification_email(email):
     except Exception as e:
         print(f"[ERROR] Failed to send verification email: {e}")
         # Consider logging this error properly
+=======
+    with smtplib.SMTP('smtp.postmarkapp.com', SMTP_PORT) as smtp:
+        smtp.starttls()
+        smtp.login(SMTP_USERNAME, SMTP_PASSWORD)
+        smtp.send_message(msg)
+
+
+>>>>>>> 8c5cea99f6f1f5849f5f12d4663316028dbe9512
 
 def validate_email(email):
     """Simple email validation using regex"""
@@ -355,7 +364,11 @@ def register():
                 # Find user by email
                 user_id = None
                 for user in users:
+<<<<<<< HEAD
                     if user['email'] == user_data['email']:
+=======
+                    if user['email'] == email:
+>>>>>>> 8c5cea99f6f1f5849f5f12d4663316028dbe9512
                         user_id = user['id']
                         break
                         
@@ -363,8 +376,14 @@ def register():
                     # Deactivate the user
                     requests.patch(f'http://192.168.88.3:3333/users/{user_id}/deactivate')
             except Exception as e:
+<<<<<<< HEAD
                 print(f"[ERROR] Failed to deactivate user: {e}")            
             send_verification_email(user_data['email'])
+=======
+                print(f"[ERROR] Failed to deactivate user: {e}")
+                
+            send_verification_email(email)         
+>>>>>>> 8c5cea99f6f1f5849f5f12d4663316028dbe9512
             return jsonify({
                 'message': 'Tài khoản đã được tạo thành công! Vui lòng kiểm tra email để xác minh tài khoản.',
                 'success': True

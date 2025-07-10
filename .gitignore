@@ -1,5 +1,5 @@
-src/database/key.key
-src/database/app.db
+src/database/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]
