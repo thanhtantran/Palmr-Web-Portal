@@ -3,7 +3,9 @@ import requests
 import re
 import time
 from src.models.user import User, db
-from src.config import decrypt_text, ADMIN_USERNAME, ADMIN_PASSWORD, PALMR_LOGIN_URL, PALMR_REGISTER_URL
+from src.config import decrypt_text, ADMIN_USERNAME, ADMIN_PASSWORD, PALMR_LOGIN_URL, PALMR_REGISTER_URL, RECAPTCHA_SECRET_KEY, RECAPTCHA_SITE_KEY, SMTP_SERVER, SMTP_PASSWORD, SMTP_USERNAME, SMTP_PORT
+import smtplib
+from email.message import EmailMessage
 
 user_bp = Blueprint('user', __name__)
 
@@ -12,6 +14,23 @@ token_cache = {
     'token': None,
     'expiry': 0  # Unix timestamp when token expires
 }
+
+def send_verification_email(email):
+    msg = EmailMessage()
+    msg['Subject'] = 'Xác thực email SaveYourFile.online'
+    msg['From'] = 'let@saveyourfile.online'
+    msg['To'] = email
+    verification_link = f"https://saveyourfile.online/verify?email={email}"
+    msg.set_content(f"Nhấn vào link sau để xác thực email: {verification_link}")
+    
+    try:
+        with smtplib.SMTP(SMTP_SERVER, SMTP_PORT) as smtp:
+            smtp.starttls()
+            smtp.login(SMTP_USERNAME, SMTP_PASSWORD)
+            smtp.send_message(msg)
+    except Exception as e:
+        print(f"[ERROR] Failed to send verification email: {e}")
+        # Consider logging this error properly
 
 def validate_email(email):
     """Simple email validation using regex"""
@@ -152,7 +171,7 @@ def create_palmr_user(user_data):
             'lastName': user_data.get('lastName', '').strip(),
             'username': user_data['username'].strip(),
             'email': user_data['email'].strip(),
-            'password': user_data['password']
+            'password': user_data['password'],
         }
         
         # Add image field if provided
@@ -198,7 +217,6 @@ def create_palmr_user(user_data):
                 print("[ERROR] Conflict - User might already exist")
             elif response.status_code == 422:
                 print("[ERROR] Unprocessable Entity - Validation error")
-            
             return False
         
     except requests.exceptions.Timeout as e:
@@ -213,6 +231,34 @@ def create_palmr_user(user_data):
         print(f"[DEBUG] Full traceback: {traceback.format_exc()}")
         return False
 
+@user_bp.route('/verify', methods=['GET'])
+def verify_email():
+    email = request.args.get('email')
+    
+    # Get all users from API
+    response = requests.get('http://192.168.88.3:3333/users')
+    users = response.json()
+    
+    # Find matching user
+    user_id = None
+    for user in users:
+        if user['email'] == email:
+            user_id = user['id']
+            break
+    
+    if user_id:
+        # Activate user
+        requests.patch(f'http://192.168.88.3:3333/users/{user_id}/activate')
+        
+        # Update local database
+        user = User.query.filter_by(email=email).first()
+        if user:
+            user.verified = True
+            db.session.commit()
+        
+        return 'Email verified successfully!'
+    return 'User not found', 404
+
 @user_bp.route('/register', methods=['POST'])
 def register():
     try:
@@ -220,21 +266,36 @@ def register():
         
         # Validate reCAPTCHA
         recaptcha_token = data.get('recaptchaToken')
+<<<<<<< HEAD
         if not recaptcha_token:
             return jsonify({'error': 'Vui lòng xác nhận reCAPTCHA'}), 400
+=======
+
+        if not recaptcha_token:
+            return jsonify({'error': 'Không nhận được reCAPTCHA token'}), 400
+>>>>>>> ef79a5ca37f15b21194bc7bff654817a454aaf2e
             
         # Verify with Google reCAPTCHA API
         verify_url = 'https://www.google.com/recaptcha/api/siteverify'
         payload = {
+<<<<<<< HEAD
             'secret': current_app.config['RECAPTCHA_SECRET_KEY'],
+=======
+            'secret': RECAPTCHA_SECRET_KEY,
+>>>>>>> ef79a5ca37f15b21194bc7bff654817a454aaf2e
             'response': recaptcha_token
         }
         response = requests.post(verify_url, data=payload)
         result = response.json()
         
         if not result.get('success'):
+<<<<<<< HEAD
             return jsonify({'error': 'Xác thực reCAPTCHA thất bại'}), 400
 
+=======
+            return jsonify({'error': 'Xác thực reCAPTCHA thất bại'}), 400        
+        
+>>>>>>> ef79a5ca37f15b21194bc7bff654817a454aaf2e
         # Validate required fields
         required_fields = ['firstName', 'lastName', 'username', 'email', 'password']
         for field in required_fields:
@@ -248,6 +309,7 @@ def register():
         username = data['username'].strip()
         email = data['email'].strip()
         password = data['password']
+        
         
         print(f"[DEBUG] Extracted data - firstName: {firstName}, lastName: {lastName}, username: {username}, email: {email}")
         
@@ -278,13 +340,31 @@ def register():
             'lastName': lastName,
             'username': username,
             'email': email,
-            'password': password
+            'password': password,
         }
         
         # Create user in Palmr API
         print("[DEBUG] Creating user in Palmr API...")
         if create_palmr_user(user_data):
             print("[DEBUG] User created successfully in Palmr API")
+            try:
+                # Get list of users
+                response = requests.get('http://192.168.88.3:3333/users')
+                users = response.json()
+                
+                # Find user by email
+                user_id = None
+                for user in users:
+                    if user['email'] == user_data['email']:
+                        user_id = user['id']
+                        break
+                        
+                if user_id:
+                    # Deactivate the user
+                    requests.patch(f'http://192.168.88.3:3333/users/{user_id}/deactivate')
+            except Exception as e:
+                print(f"[ERROR] Failed to deactivate user: {e}")            
+            send_verification_email(user_data['email'])
             return jsonify({
                 'message': 'Tài khoản đã được tạo thành công! Vui lòng kiểm tra email để xác minh tài khoản.',
                 'success': True
